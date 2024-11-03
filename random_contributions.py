@@ -5,60 +5,44 @@ import requests
 from datetime import datetime, timedelta
 
 # Set the range of contributions
-MIN_DAILY_CONTRIBUTIONS = 3
-MAX_DAILY_CONTRIBUTIONS = 33
-
-# Define the number of contribution days per week
-MIN_CONTRIBUTION_DAYS = 4
-MAX_CONTRIBUTION_DAYS = 6
+MIN_CONTRIBUTIONS = 4  # Minimum contributions per session
+MAX_CONTRIBUTIONS = 32  # Maximum contributions per session
 
 # Define start and end dates for contribution range
-start_date = datetime(2023, 11, 1)
-end_date = datetime(2024, 3, 20)
+start_date = datetime(2024, 6, 23)
+end_date = datetime(2024, 7, 14)
 
-# Generate a list of contribution days
-def generate_contribution_days():
-    current_date = start_date
-    contribution_days = []
-    
-    while current_date <= end_date:
-        # Randomly decide if this week has contribution days (4 to 6 days)
-        if random.randint(0, 1) == 1:  # 50% chance to contribute this week
-            days_in_week = random.randint(MIN_CONTRIBUTION_DAYS, MAX_CONTRIBUTION_DAYS)
-            for _ in range(days_in_week):
-                # Select a random day in this week to contribute
-                contribution_day = current_date + timedelta(days=random.randint(0, 6))
-                if contribution_day <= end_date and contribution_day not in contribution_days:
-                    contribution_days.append(contribution_day)
-        current_date += timedelta(days=7)  # Move to the next week
+# Randomly determine how many contributions to make within the specified range
+num_contributions = random.randint(MIN_CONTRIBUTIONS, MAX_CONTRIBUTIONS)
 
-    return contribution_days
+# Generate a random date within the defined range
+def random_date():
+    delta_days = (end_date - start_date).days
+    random_day = start_date + timedelta(days=random.randint(0, delta_days))
+    return random_day.strftime('%Y-%m-%d'), random_day.strftime('%Y-%m-%dT%H:%M:%S')
 
 # Create a new branch for the contributions
 branch_name = f"random-contributions-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 subprocess.run(["git", "checkout", "-b", branch_name])
 
-# Generate contribution days and create random commits
-contribution_days = generate_contribution_days()
-for date in contribution_days:
-    # Determine how many contributions to make for this day
-    num_contributions = random.randint(MIN_DAILY_CONTRIBUTIONS, MAX_DAILY_CONTRIBUTIONS)
+# Create random commits on random dates within the specified range
+for _ in range(num_contributions):
+    date, iso_date = random_date()
     
-    for _ in range(num_contributions):
-        # Generate ISO date format for commit date
-        iso_date = date.strftime('%Y-%m-%dT%H:%M:%S')
-        
-        # Create a dummy file for the commit
-        with open("dummy.txt", "a") as file:
-            file.write(f"Contribution on {date.strftime('%Y-%m-%d')}\n")
-        
-        # Set environment variable for author date
-        os.environ['GIT_AUTHOR_DATE'] = iso_date
-        os.environ['GIT_COMMITTER_DATE'] = iso_date
+    # Create a dummy file for the commit
+    with open("dummy.txt", "a") as file:
+        file.write(f"Contribution on {date}\n")
+    
+    # Set environment variable for author date
+    os.environ['GIT_AUTHOR_DATE'] = iso_date
+    os.environ['GIT_COMMITTER_DATE'] = iso_date
 
-        # Add and commit the changes with the specific date
-        subprocess.run(["git", "add", "dummy.txt"])
-        subprocess.run(["git", "commit", "-m", f"Random contribution on {date.strftime('%Y-%m-%d')}"])
+    # Co-author information
+    co_author = "actions-user <actions@github.com>"
+
+    # Add and commit the changes with the specific date and co-author
+    subprocess.run(["git", "add", "dummy.txt"])
+    subprocess.run(["git", "commit", "-m", f"Random contribution on {date}\n\nCo-authored-by: {co_author}"])
 
 # Push the branch to the remote repository
 subprocess.run(["git", "push", "origin", branch_name])
