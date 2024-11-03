@@ -14,46 +14,44 @@ MAX_CONTRIBUTION_DAYS = 6
 
 # Define start and end dates for contribution range
 start_date = datetime(2023, 11, 1)
-end_date = datetime(2024, 10, 20)
+end_date = datetime(2024, 3, 20)
 
-# Generate a list of random contribution dates
-def generate_contribution_dates():
+# Generate a list of contribution days
+def generate_contribution_days():
     current_date = start_date
-    contribution_dates = []
+    contribution_days = []
     
     while current_date <= end_date:
-        # Randomly decide if this week has contribution days
+        # Randomly decide if this week has contribution days (4 to 6 days)
         if random.randint(0, 1) == 1:  # 50% chance to contribute this week
             days_in_week = random.randint(MIN_CONTRIBUTION_DAYS, MAX_CONTRIBUTION_DAYS)
             for _ in range(days_in_week):
                 # Select a random day in this week to contribute
                 contribution_day = current_date + timedelta(days=random.randint(0, 6))
-                if contribution_day <= end_date:
-                    contribution_dates.append(contribution_day)
+                if contribution_day <= end_date and contribution_day not in contribution_days:
+                    contribution_days.append(contribution_day)
         current_date += timedelta(days=7)  # Move to the next week
 
-    return contribution_dates
+    return contribution_days
 
 # Create a new branch for the contributions
 branch_name = f"random-contributions-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 subprocess.run(["git", "checkout", "-b", branch_name])
 
-# Get the contribution dates
-contribution_dates = generate_contribution_dates()
-
-# Create random commits on the generated contribution dates
-for date in contribution_dates:
+# Generate contribution days and create random commits
+contribution_days = generate_contribution_days()
+for date in contribution_days:
     # Determine how many contributions to make for this day
     num_contributions = random.randint(MIN_DAILY_CONTRIBUTIONS, MAX_DAILY_CONTRIBUTIONS)
     
     for _ in range(num_contributions):
+        # Generate ISO date format for commit date
+        iso_date = date.strftime('%Y-%m-%dT%H:%M:%S')
+        
         # Create a dummy file for the commit
         with open("dummy.txt", "a") as file:
             file.write(f"Contribution on {date.strftime('%Y-%m-%d')}\n")
         
-        # Generate ISO format date for commit
-        iso_date = date.strftime('%Y-%m-%dT%H:%M:%S')
-
         # Set environment variable for author date
         os.environ['GIT_AUTHOR_DATE'] = iso_date
         os.environ['GIT_COMMITTER_DATE'] = iso_date
