@@ -1,36 +1,28 @@
 name: Random Contributions
 
 on:
-  workflow_dispatch:  # Allows manual triggering of the workflow from the Actions tab
+  push:
+    branches:
+      - main
 
 jobs:
-  create_contributions:
+  run-script:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v2
         with:
           python-version: '3.x'
 
-      - name: Install Git
-        run: sudo apt-get install -y git
-
-      - name: Run Random Contribution Script
-        env:
-          GIT_AUTHOR_NAME: 'GitHub Action'
-          GIT_AUTHOR_EMAIL: 'action@github.com'
-          GIT_COMMITTER_NAME: 'GitHub Action'
-          GIT_COMMITTER_EMAIL: 'action@github.com'
+      - name: Install dependencies
         run: |
-          python3 random_contributions.py
+          python -m pip install --upgrade pip
+          pip install requests
 
-      - name: Push contributions
+      - name: Run random contributions script
+        run: python3 random_contributions.py
         env:
-          GITHUB_TOKEN: ${{ secrets.RANDOM_TOKEN }}
-        run: |
-          git push origin main
-
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
