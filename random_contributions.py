@@ -1,6 +1,7 @@
 import os
 import random
 import subprocess
+import requests
 from datetime import datetime, timedelta
 
 # Set the range of contributions
@@ -20,6 +21,10 @@ def random_date():
     random_day = start_date + timedelta(days=random.randint(0, delta_days))
     return random_day.strftime('%Y-%m-%d'), random_day.strftime('%Y-%m-%dT%H:%M:%S')
 
+# Create a new branch for the contributions
+branch_name = f"random-contributions-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+subprocess.run(["git", "checkout", "-b", branch_name])
+
 # Create random commits on random dates within the specified range
 for _ in range(num_contributions):
     date, iso_date = random_date()
@@ -28,9 +33,49 @@ for _ in range(num_contributions):
     with open("dummy.txt", "a") as file:
         file.write(f"Contribution on {date}\n")
     
+    # Set environment variable for author date
+    os.environ['GIT_AUTHOR_DATE'] = iso_date
+    os.environ['GIT_COMMITTER_DATE'] = iso_date
+
     # Add and commit the changes with the specific date
     subprocess.run(["git", "add", "dummy.txt"])
-    subprocess.run(["git", "commit", "-m", f"Random contribution on {date}", "--date", iso_date])
+    subprocess.run(["git", "commit", "-m", f"Random contribution on {date}"])
 
-# Inform the user of the number of contributions created
-print(f"Created {num_contributions} random contributions between {start_date.strftime('%Y-%m-%d')} and {end_date.strftime('%Y-%m-%d')}. You can now push to your GitHub repository.")
+# Push the branch to the remote repository
+subprocess.run(["git", "push", "origin", branch_name])
+
+# Create a pull request
+repo = "ums91/random-contributions"  # Update this with your repository name
+token = os.getenv("GITHUB_TOKEN")  # Use your GitHub token from environment variables
+
+# Define the pull request data
+pr_data = {
+    "title": f"Add random contributions",
+    "head": branch_name,
+    "base": "main",
+    "body": "This pull request adds random contributions."
+}
+
+# Create the pull request
+response = requests.post(
+    f"https://api.github.com/repos/{repo}/pulls",
+    json=pr_data,
+    headers={"Authorization": f"token {token}"}
+)
+
+if response.status_code == 201:
+    print(f"Pull request created successfully: {response.json()['html_url']}")
+    
+    # Merge the pull request
+    pr_number = response.json()['number']
+    merge_response = requests.put(
+        f"https://api.github.com/repos/{repo}/pulls/{pr_number}/merge",
+        headers={"Authorization": f"token {token}"}
+    )
+    
+    if merge_response.status_code == 200:
+        print("Pull request merged successfully.")
+    else:
+        print(f"Failed to merge pull request: {merge_response.json()}")
+else:
+    print(f"Failed to create pull request: {response.json()}")
