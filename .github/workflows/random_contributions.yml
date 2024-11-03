@@ -22,7 +22,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
+      - name: Configure Git
+        run: |
+          git config --global user.email "omargoroo91@gmail.com"
+          git config --global user.name "ums91"
+
       - name: Run random contributions script
         run: python3 random_contributions.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push changes
+        run: |
+          git push origin HEAD:random-contributions-$(date +'%Y%m%d%H%M%S')
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          title: "Random Contributions"
+          body: "Automated random contributions generated."
+          base: main
+          head: random-contributions-$(date +'%Y%m%d%H%M%S')
